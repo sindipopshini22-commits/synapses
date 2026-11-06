@@ -133,6 +133,23 @@ class Visit:
     memoryDigits: int
     colorWordSeconds: float
 
+    def to_dict(self) -> dict:
+        return {
+            "day": self.day,
+            "reactionMs": self.reactionMs,
+            "memoryDigits": self.memoryDigits,
+            "colorWordSeconds": self.colorWordSeconds,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Visit":
+        return cls(
+            day=data["day"],
+            reactionMs=data["reactionMs"],
+            memoryDigits=data["memoryDigits"],
+            colorWordSeconds=data["colorWordSeconds"],
+        )
+
 
 @dataclass
 class Case:
@@ -398,7 +415,8 @@ def load_cases(path: str = "data/cases.json") -> List[Case]:
     try:
         with open(p, "r", encoding="utf-8") as handle:
             payload = json.load(handle)
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f'ERROR: The database file {path} is damaged. No cases loaded.')
         return []
     return [Case.from_dict(item) for item in payload.get("cases", [])]
 
@@ -482,6 +500,166 @@ def compute_trend(test_name: str, old_val, new_val) -> str:
         if new_val < old_val:
             return "worse"
         return "steady"
+
+
+# ============================================================================
+# Mission 7: The Case File — extended data models
+# ============================================================================
+
+@dataclass
+class RouteInfo:
+    departure: Optional[str] = None
+    arrival: Optional[str] = None
+    route: Optional[str] = None
+    duration: Optional[int] = None
+    destination: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        return {k: v for k, v in self.__dict__.items() if v is not None}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "RouteInfo":
+        return cls(**{k: v for k, v in data.items() if k in ("departure", "arrival", "route", "duration", "destination")})
+
+
+@dataclass
+class TreatmentTime:
+    planned: Optional[str] = None
+    actual: Optional[str] = None
+    waited: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        return {k: v for k, v in self.__dict__.items() if v is not None}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "TreatmentTime":
+        return cls(**{k: v for k, v in data.items() if k in ("planned", "actual", "waited")})
+
+
+@dataclass
+class HospitalInfo:
+    scan: TreatmentTime = field(default_factory=TreatmentTime)
+    drug: TreatmentTime = field(default_factory=TreatmentTime)
+    clotRemoval: TreatmentTime = field(default_factory=TreatmentTime)
+
+    def to_dict(self) -> dict:
+        return {
+            "scan": self.scan.to_dict(),
+            "drug": self.drug.to_dict(),
+            "clotRemoval": self.clotRemoval.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "HospitalInfo":
+        return cls(
+            scan=TreatmentTime.from_dict(data.get("scan", {})),
+            drug=TreatmentTime.from_dict(data.get("drug", {})),
+            clotRemoval=TreatmentTime.from_dict(data.get("clotRemoval", {})),
+        )
+
+
+@dataclass
+class Case:
+    id: str
+    name: str
+    age: int
+    city: str
+    likelyPipe: str
+    lastSeenWell: Optional[str] = None
+    created: Optional[str] = None
+    symptoms: List[str] = field(default_factory=list)
+    severity: int = 0
+    band: str = ""
+    drugPossible: bool = False
+    drugUntil: Optional[str] = None
+    clotPossible: bool = False
+    clotUntil: Optional[str] = None
+    route: Optional[RouteInfo] = None
+    hospital: Optional[HospitalInfo] = None
+    visits: List[Visit] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        d: dict = {
+            "id": self.id,
+            "name": self.name,
+            "age": self.age,
+            "city": self.city,
+            "likelyPipe": self.likelyPipe,
+            "visits": [v.to_dict() for v in self.visits],
+        }
+        if self.lastSeenWell is not None:
+            d["lastSeenWell"] = self.lastSeenWell
+        if self.created is not None:
+            d["created"] = self.created
+        if self.symptoms:
+            d["symptoms"] = self.symptoms
+        if self.severity:
+            d["severity"] = self.severity
+        if self.band:
+            d["band"] = self.band
+        if self.drugPossible:
+            d["drugPossible"] = self.drugPossible
+        if self.drugUntil is not None:
+            d["drugUntil"] = self.drugUntil
+        if self.clotPossible:
+            d["clotPossible"] = self.clotPossible
+        if self.clotUntil is not None:
+            d["clotUntil"] = self.clotUntil
+        if self.route:
+            d["route"] = self.route.to_dict()
+        if self.hospital:
+            d["hospital"] = self.hospital.to_dict()
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Case":
+        visits = [Visit.from_dict(v) for v in data.get("visits", [])]
+        route = RouteInfo.from_dict(data["route"]) if data.get("route") else None
+        hospital = HospitalInfo.from_dict(data["hospital"]) if data.get("hospital") else None
+        return cls(
+            id=data["id"],
+            name=data["name"],
+            age=int(data["age"]),
+            city=data.get("city", "unknown"),
+            likelyPipe=data.get("likelyPipe", "unknown"),
+            lastSeenWell=data.get("lastSeenWell"),
+            created=data.get("created"),
+            symptoms=data.get("symptoms", []),
+            severity=data.get("severity", 0),
+            band=data.get("band", ""),
+            drugPossible=data.get("drugPossible", False),
+            drugUntil=data.get("drugUntil"),
+            clotPossible=data.get("clotPossible", False),
+            clotUntil=data.get("clotUntil"),
+            route=route,
+            hospital=hospital,
+            visits=visits,
+        )
+
+
+# ============================================================================
+# Mission 7: The Case File — time helpers
+# ============================================================================
+
+def _time_to_minutes(time_str: Optional[str]) -> Optional[int]:
+    if not time_str:
+        return None
+    try:
+        text = str(time_str).strip()
+        if ":" in text:
+            parts = text.split(":")
+            return int(parts[0]) * 60 + int(parts[1])
+        return int(text)
+    except (ValueError, IndexError):
+        return None
+
+
+def _band_for_severity(severity: int) -> str:
+    if severity <= 4:
+        return "minor"
+    if severity <= 9:
+        return "moderate"
+    return "severe"
 
 
 class AtlasLoader:
@@ -1080,12 +1258,356 @@ class SynapseApp:
         unit = unit_map[key]
         scale = scale_map[key]
 
-        print(f'{label_map[key]} · {"lower is better" if lower_better else "higher is better"} · normal for age {age}: {low:.0f} to {high:.0f} {unit}')
+        better_text = "lower is better" if lower_better else "higher is better"
+        print(f'{label_map[key]} · {better_text} · normal for age {age}: {low:.0f} to {high:.0f} {unit}')
         for v in visits:
             val = getattr(v, field)
             bars = round(val / scale)
             val_str = f"{val:.1f} {unit}" if key == "colorword" else f"{val} {unit}"
             print(f"Day {v.day:<3} {'#' * bars} {val_str}")
+
+    # ========================================================================
+    # Mission 7: The Case File — command handler
+    # ========================================================================
+
+    def handle_case(self, args: List[str]) -> None:
+        if not args:
+            print('ERROR: Missing case id. Usage: case <case id>')
+            return
+
+        sub = args[0].lower()
+        if sub == "find":
+            if len(args) < 2:
+                print("ERROR: Search text cannot be empty.")
+                return
+            self.case_find(" ".join(args[1:]))
+        elif sub == "export":
+            if len(args) != 2:
+                print("ERROR: Usage: case export <case id>")
+                return
+            self.case_export(args[1])
+        elif sub == "board":
+            self.case_board()
+        elif sub == "cost":
+            if len(args) != 2:
+                print("ERROR: Usage: case cost <case id>")
+                return
+            self.case_cost(args[1])
+        else:
+            self.case_show(args[0])
+
+    def case_show(self, case_id: str) -> None:
+        case = self._find_case(case_id)
+        if case is None:
+            print(f'ERROR: No case called "{case_id}".')
+            return
+
+        print(f'=== Case {case.id}: {case.name}, {case.age}, {case.city} ===')
+
+        # TRIAGE
+        print("TRIAGE")
+        if case.lastSeenWell:
+            print(f"{case.lastSeenWell} Last seen well")
+        if case.created:
+            print(f"{case.created} Case created by the ambulance crew")
+        if case.symptoms:
+            print(f"Symptoms: {', '.join(case.symptoms)}")
+        pipe_size = ""
+        if self.atlas and case.likelyPipe in self.atlas.pipes:
+            pipe_size = self.atlas.pipes[case.likelyPipe].size
+        if case.severity:
+            band = case.band or _band_for_severity(case.severity)
+            drug_part = f"Drug possible until {case.drugUntil}" if case.drugPossible else "Drug not possible"
+            clot_part = f"clot removal possible until {case.clotUntil}" if case.clotPossible else "clot removal not possible"
+            pipe_part = f"({pipe_size})" if pipe_size else ""
+            print(f"Severity {case.severity} ({band}) · likely blocked pipe: {case.likelyPipe} {pipe_part} · {drug_part} · {clot_part}")
+        else:
+            pipe_part = f"({pipe_size})" if pipe_size else ""
+            print(f"likely blocked pipe: {case.likelyPipe} {pipe_part}")
+
+        # ROUTE
+        print("ROUTE")
+        if case.route:
+            print(case.route.departure or "")
+            print(case.route.arrival or "")
+            route_str = case.route.route or ""
+            dur = f", {case.route.duration} min" if case.route.duration is not None else ""
+            print(f"Leaves {case.city}: {route_str}{dur}")
+            print(f"Arrives at {case.route.destination or ''}")
+        else:
+            print(f"ROUTE: not planned yet. Run route {case.id}.")
+
+        # HOSPITAL
+        print("HOSPITAL")
+        if case.hospital and case.route and case.route.destination == "Qendra Neuro Tirana":
+            treatments = [
+                ("Scan", case.hospital.scan),
+                ("Drug", case.hospital.drug),
+                ("Clot removal", case.hospital.clotRemoval),
+            ]
+            for name, _ in treatments:
+                print(name)
+            print("PLANNED")
+            for name, tt in treatments:
+                print(tt.planned if tt.planned else "-")
+            print("ACTUAL")
+            for name, tt in treatments:
+                print(tt.actual if tt.actual else "-")
+            print("WAITED")
+            for name, tt in treatments:
+                print(tt.waited if tt.waited else "-")
+        else:
+            planned_drug = ""
+            if case.hospital and case.hospital.drug.planned:
+                planned_drug = f" Planned drug: {case.hospital.drug.planned}."
+            print(f"Not recorded: only Qendra Neuro Tirana is simulated.{planned_drug}")
+
+        # RECOVERY
+        age = case.age
+        try:
+            r_norm = self.norms.norm_for_age("reaction", age) if self.norms else None
+            norm_ages = f"{r_norm['from_age']}-{r_norm['to_age']}" if r_norm else "unknown"
+        except (ValueError, TypeError):
+            norm_ages = "unknown"
+        print(f"RECOVERY (normal for ages {norm_ages})")
+        if not case.visits:
+            print("No clinic visits yet.")
+        else:
+            visits = sorted(case.visits, key=lambda v: v.day)
+            for v in visits:
+                parts = []
+                if self.norms:
+                    r_class = self.norms.classify_value("reaction", age, v.reactionMs)
+                    m_class = self.norms.classify_value("memory", age, v.memoryDigits)
+                    c_class = self.norms.classify_value("colorword", age, v.colorWordSeconds)
+                    parts.append(f"reaction {v.reactionMs} ms {r_class}")
+                    parts.append(f"memory {v.memoryDigits} {m_class}")
+                    parts.append(f"colour words {v.colorWordSeconds:.1f} s {c_class}")
+                else:
+                    parts.append(f"reaction {v.reactionMs} ms")
+                    parts.append(f"memory {v.memoryDigits} digits")
+                    parts.append(f"colour words {v.colorWordSeconds:.1f} s")
+                print(f"Day {v.day}")
+                print(parts[0])
+                for p in parts[1:]:
+                    print(f"· {p}")
+
+    def case_find(self, text: str) -> None:
+        if not text or not text.strip():
+            print("ERROR: Search text cannot be empty.")
+            return
+        needle = text.strip().lower()
+        matches = []
+        for case in self.cases:
+            haystack = f"{case.name} {case.city}".lower()
+            if needle in haystack:
+                matches.append(case)
+        if not matches:
+            print(f'No cases match "{text}".')
+            return
+        if len(matches) == 1:
+            print(f'1 case matches "{text}". Opening it.')
+            self.case_show(matches[0].id)
+            return
+        print(f'{len(matches)} cases match "{text}":')
+        for i, case in enumerate(matches, 1):
+            print(f"{i}. {case.id} {case.name}")
+            print(f"{case.age} {case.city}")
+        while True:
+            try:
+                choice = input("Enter a number to open, or press ENTER to go back: ").strip()
+            except EOFError:
+                print()
+                return
+            if not choice:
+                return
+            try:
+                idx = int(choice)
+                if 1 <= idx <= len(matches):
+                    self.case_show(matches[idx - 1].id)
+                    return
+            except ValueError:
+                pass
+            print("Invalid selection. Try again.")
+
+    def case_export(self, case_id: str) -> None:
+        case = self._find_case(case_id)
+        if case is None:
+            print(f'ERROR: No case called "{case_id}".')
+            return
+
+        import io
+        from contextlib import redirect_stdout
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.case_show(case_id)
+        text = buf.getvalue()
+
+        exp_dir = Path("exports")
+        exp_dir.mkdir(parents=True, exist_ok=True)
+
+        txt_path = exp_dir / f"{case_id}.txt"
+        json_path = exp_dir / f"{case_id}.json"
+
+        txt_path.write_text(text, encoding="utf-8")
+        json_path.write_text(json.dumps(case.to_dict(), indent=2), encoding="utf-8")
+
+        print(f'SUCCESS: Wrote exports/{case_id}.txt and exports/{case_id}.json.')
+
+    def case_board(self) -> None:
+        if not self.cases:
+            print("No cases.")
+            return
+
+        print("ID")
+        print("NAME")
+        print("WENT TO")
+
+        flagged = set()
+        for case in self.cases:
+            case._below_count = 0
+            if case.visits and self.norms and self.atlas:
+                visits = sorted(case.visits, key=lambda v: v.day)
+                latest = visits[-1]
+                age = case.age
+                stopped = stopped_areas_for_pipe(self.atlas, case.likelyPipe)
+                for test_name, field in [("reaction", "reactionMs"), ("memory", "memoryDigits"), ("colorword", "colorWordSeconds")]:
+                    val = getattr(latest, field)
+                    classification = self.norms.classify_value(test_name, age, val)
+                    expected = test_is_expected_weak(test_name, stopped)
+                    if classification in ("below", "well below") and not expected:
+                        case._below_count += 1
+                        flagged.add(case.id)
+
+        for case in self.cases:
+            dest = case.route.destination if case.route else ""
+            print(f"{case.id} {case.name} {dest}")
+
+        print("! = check for a new stroke")
+
+        # FIRST TREATMENT
+        print("FIRST TREATMENT")
+        for case in self.cases:
+            print(self._first_treatment(case))
+
+        # WAITED
+        print("WAITED")
+        for case in self.cases:
+            print(self._total_waited(case))
+
+        # LAST VISIT
+        print("LAST VISIT")
+        for case in self.cases:
+            print(self._last_visit_summary(case))
+
+        if flagged:
+            print("!")
+
+    def _first_treatment_info(self, case: Case) -> Optional[tuple]:
+        """Return (name, time_str, waited_str) for the first treatment, or None."""
+        if not case.hospital:
+            return None
+        treatments = []
+        if case.hospital.drug.actual:
+            treatments.append(("drug", case.hospital.drug.actual, case.hospital.drug.waited))
+        elif case.hospital.drug.planned:
+            treatments.append(("drug", f"{case.hospital.drug.planned} planned", case.hospital.drug.waited))
+        if case.hospital.clotRemoval.actual:
+            treatments.append(("clot removal", case.hospital.clotRemoval.actual, case.hospital.clotRemoval.waited))
+        elif case.hospital.clotRemoval.planned:
+            treatments.append(("clot removal", f"{case.hospital.clotRemoval.planned} planned", case.hospital.clotRemoval.waited))
+        if not treatments:
+            return None
+        treatments.sort(key=lambda t: _time_to_minutes(t[1].replace(" planned", "")) or 0)
+        return treatments[0]
+
+    def _first_treatment(self, case: Case) -> str:
+        info = self._first_treatment_info(case)
+        if not info:
+            return "not recorded"
+        name, time_str, _ = info
+        return f"{name} {time_str}"
+
+    def _total_waited(self, case: Case) -> str:
+        info = self._first_treatment_info(case)
+        if not info or not info[2]:
+            return "not recorded"
+        return info[2]
+
+    def _last_visit_summary(self, case: Case) -> str:
+        if not case.visits:
+            return "no visits"
+        if not self.norms:
+            return "no norms"
+        visits = sorted(case.visits, key=lambda v: v.day)
+        latest = visits[-1]
+        age = case.age
+        below_count = 0
+        for test_name, field in [("reaction", "reactionMs"), ("memory", "memoryDigits"), ("colorword", "colorWordSeconds")]:
+            val = getattr(latest, field)
+            classification = self.norms.classify_value(test_name, age, val)
+            if classification in ("below", "well below"):
+                below_count += 1
+        if below_count == 0:
+            return f"day {latest.day}: all normal"
+        return f"day {latest.day}: {below_count} below normal"
+
+    def case_cost(self, case_id: str) -> None:
+        case = self._find_case(case_id)
+        if case is None:
+            print(f'ERROR: No case called "{case_id}".')
+            return
+
+        if not case.lastSeenWell:
+            print("ERROR: No last seen well time recorded.")
+            return
+
+        candidates = []
+        if case.hospital:
+            if case.hospital.drug.actual:
+                candidates.append(("drug", case.hospital.drug.actual))
+            elif case.hospital.drug.planned:
+                candidates.append(("drug", f"{case.hospital.drug.planned} planned"))
+            if case.hospital.clotRemoval.actual:
+                candidates.append(("clot removal", case.hospital.clotRemoval.actual))
+            elif case.hospital.clotRemoval.planned:
+                candidates.append(("clot removal", f"{case.hospital.clotRemoval.planned} planned"))
+
+        if not candidates:
+            print("ERROR: No treatment time recorded.")
+            return
+
+        def sort_key(cand):
+            t = cand[1].replace(" planned", "")
+            return _time_to_minutes(t) or 9999
+
+        candidates.sort(key=sort_key)
+        treatment_name, treatment_time = candidates[0]
+        t_minutes = _time_to_minutes(treatment_time.replace(" planned", "")) or 0
+        l_minutes = _time_to_minutes(case.lastSeenWell) or 0
+
+        total_minutes = t_minutes - l_minutes
+        if total_minutes < 0:
+            total_minutes += 24 * 60
+
+        brain_cells = total_minutes * 1.9
+
+        waited_minutes = 0
+        if case.hospital:
+            if treatment_name == "drug" and case.hospital.drug.waited:
+                w = _time_to_minutes(case.hospital.drug.waited.replace(" min", ""))
+                waited_minutes = w or 0
+            elif treatment_name == "clot removal" and case.hospital.clotRemoval.waited:
+                w = _time_to_minutes(case.hospital.clotRemoval.waited.replace(" min", ""))
+                waited_minutes = w or 0
+
+        print(f"Last seen well {case.lastSeenWell} -> first treatment {treatment_time} ({treatment_name}): {total_minutes} min")
+        print(f"About {int(brain_cells)} million brain cells lost before treatment, at 1.9 million a minute.")
+        if waited_minutes > 0:
+            print(f"{waited_minutes} of those minutes were spent waiting in the hospital line: about {int(waited_minutes * 1.9)} million.")
+        else:
+            print("0 of those minutes were spent waiting in the hospital line: about 0 million.")
 
     def handle_command(self, raw_command: str) -> bool:
         command = raw_command.strip()
@@ -1141,9 +1663,13 @@ class SynapseApp:
             self.handle_clinic(parts[1:])
             return True
 
+        if parts[0].lower() == "case":
+            self.handle_case(parts[1:])
+            return True
+
         if command.lower() in {"help", "?"}:
             print('Synapse 1.0 · type "help" to see all commands')
-            print("Available commands: atlas load <path> | atlas pipes | atlas areas | atlas show <name> | atlas find <word> | atlas tree | atlas path <area> | clinic visit <case id> | clinic record <case id> | clinic results <case id> | clinic check <case id> | clinic chart <case id> <test> | quit")
+            print("Available commands: atlas load <path> | atlas pipes | atlas areas | atlas show <name> | atlas find <word> | atlas tree | atlas path <area> | clinic visit <case id> | clinic record <case id> | clinic results <case id> | clinic check <case id> | clinic chart <case id> <test> | case <case id> | case find <text> | case export <case id> | case board | case cost <case id> | quit")
             return True
 
         if command.lower() in {"quit", "exit"}:

@@ -4,21 +4,118 @@
       "id": "P-0001",
       "name": "Arben Hoxha",
       "age": 67,
-      "likelyPipe": "left-neck",
-      "visits": []
+      "city": "Fier",
+      "likelyPipe": "left-middle",
+      "lastSeenWell": "07:30",
+      "created": "08:10",
+      "symptoms": ["cannot-speak", "cannot-understand", "right-arm-weak", "right-face-droop"],
+      "severity": 8,
+      "band": "moderate",
+      "drugPossible": true,
+      "drugUntil": "12:00",
+      "clotPossible": true,
+      "clotUntil": "07:30 tomorrow",
+      "route": {
+        "departure": "08:10",
+        "arrival": "10:00",
+        "route": "Fier -> Durres -> Tirana",
+        "duration": 110,
+        "destination": "Qendra Neuro Tirana"
+      },
+      "hospital": {
+        "scan": { "planned": "-", "actual": "10:10", "waited": "-" },
+        "drug": { "planned": "10:30", "actual": "10:40", "waited": "10 min" },
+        "clotRemoval": { "planned": "11:00", "actual": "11:10", "waited": "10 min" }
+      },
+      "visits": [
+        { "day": 14, "reactionMs": 540, "memoryDigits": 4, "colorWordSeconds": 31.0 },
+        { "day": 45, "reactionMs": 470, "memoryDigits": 5, "colorWordSeconds": 26.0 },
+        { "day": 90, "reactionMs": 430, "memoryDigits": 6, "colorWordSeconds": 22.0 }
+      ]
     },
     {
       "id": "P-0002",
-      "name": "Drita",
+      "name": "Drita Marku",
       "age": 72,
+      "city": "Shkoder",
       "likelyPipe": "right-arm-neck",
-      "visits": []
+      "lastSeenWell": "07:00",
+      "created": "08:00",
+      "symptoms": ["cannot-move-right-arm", "cannot-speak"],
+      "severity": 7,
+      "band": "moderate",
+      "drugPossible": true,
+      "drugUntil": "12:30",
+      "clotPossible": true,
+      "clotUntil": "07:00 tomorrow",
+      "route": {
+        "departure": "08:00",
+        "arrival": "09:30",
+        "route": "Shkoder -> Durres -> Tirana",
+        "duration": 90,
+        "destination": "Qendra Neuro Tirana"
+      },
+      "hospital": {
+        "scan": { "planned": "09:00", "actual": "09:30", "waited": "0 min" },
+        "drug": { "planned": "09:30", "actual": "09:40", "waited": "0 min" },
+        "clotRemoval": { "planned": "09:30", "actual": "09:30", "waited": "0 min" }
+      },
+      "visits": [
+        { "day": 90, "reactionMs": 405, "memoryDigits": 3, "colorWordSeconds": 24.0 }
+      ]
     },
     {
       "id": "P-0003",
-      "name": "Test Patient",
-      "age": 45,
-      "likelyPipe": "left-middle",
+      "name": "Besnik Kola",
+      "age": 58,
+      "city": "Kukes",
+      "likelyPipe": "unknown",
+      "lastSeenWell": "09:00",
+      "created": "10:00",
+      "symptoms": ["left-arm-weak", "ignores-left-side"],
+      "severity": 5,
+      "band": "moderate",
+      "drugPossible": true,
+      "drugUntil": "13:30",
+      "clotPossible": false,
+      "clotUntil": null,
+      "route": {
+        "departure": "10:00",
+        "arrival": "12:20",
+        "route": "Kukes -> Lezhe -> Shkoder",
+        "duration": 140,
+        "destination": "Spitali Rozafa"
+      },
+      "hospital": null,
+      "visits": []
+    },
+    {
+      "id": "P-0004",
+      "name": "Mira Dedja",
+      "age": 61,
+      "city": "Korce",
+      "likelyPipe": "left-neck",
+      "lastSeenWell": "10:00",
+      "created": "11:00",
+      "symptoms": ["cannot-move-left-arm", "cannot-understand"],
+      "severity": 6,
+      "band": "moderate",
+      "drugPossible": true,
+      "drugUntil": "15:30",
+      "clotPossible": true,
+      "clotUntil": "10:00 tomorrow",
+      "route": {
+        "departure": "11:00",
+        "arrival": "13:10",
+        "route": "Korce -> Tirana",
+        "duration": 130,
+        "destination": "Qendra Neuro Tirana"
+      },
+      "hospital": {
+        "scan": { "planned": "-", "actual": "13:10", "waited": "-" },
+        "drug": { "planned": "-", "actual": "13:10", "waited": "20 min" },
+        "clotRemoval": { "planned": "13:10", "actual": "13:10", "waited": "20 min" }
+      },
       "visits": []
     }
   ]
