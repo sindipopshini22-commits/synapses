@@ -1,0 +1,20 @@
+PIPE | heart | big | -
+PIPE | left-neck | big | heart
+PIPE | left-middle | big | left-neck
+PIPE | left-middle-top | small | left-middle
+PIPE | left-middle-bottom | small | left-middle
+PIPE | right-arm-neck | big | heart
+PIPE | right-middle | big | right-arm-neck
+PIPE | right-middle-top | small | right-middle
+PIPE | right-middle-bottom | small | right-middle
+PIPE | left-front | big | left-middle
+PIPE | left-back | big | left-middle
+PIPE | right-front | big | right-middle
+PIPE | right-back | big | right-middle
+
+AREA | speaking | left-middle-top | cannot-speak | Turns thoughts into words
+AREA | understanding | left-middle-bottom | cannot-understand | Understands language and meaning
+AREA | right-arm-face | right-middle-top | cannot-move-right-arm | Moves the right arm and face
+AREA | left-arm-face | left-middle-top | cannot-move-left-arm | Moves the left arm and face
+AREA | memory | left-back | cannot-remember | Stores recent memories
+AREA | balance | right-back | dizzy | Keeps balance and posture

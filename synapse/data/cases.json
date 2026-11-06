@@ -1,0 +1,25 @@
+{
+  "cases": [
+    {
+      "id": "P-0001",
+      "name": "Arben Hoxha",
+      "age": 67,
+      "likelyPipe": "left-neck",
+      "visits": []
+    },
+    {
+      "id": "P-0002",
+      "name": "Drita",
+      "age": 72,
+      "likelyPipe": "right-arm-neck",
+      "visits": []
+    },
+    {
+      "id": "P-0003",
+      "name": "Test Patient",
+      "age": 45,
+      "likelyPipe": "left-middle",
+      "visits": []
+    }
+  ]
+}
